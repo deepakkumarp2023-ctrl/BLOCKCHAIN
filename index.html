@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ChainID — Blockchain Identity Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --c1:#00ffcc;--c2:#7b2fff;--c3:#ff2d78;--c4:#ffaa00;
+  --bg:#000408;--bg2:#040c14;
+  --border:rgba(0,255,204,0.2);--text:#e0f7f4;--muted:rgba(224,247,244,0.5);
+  --mono:'Share Tech Mono',monospace;--display:'Orbitron',sans-serif;--body:'Rajdhani',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--body);overflow-x:hidden}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+.grid-overlay{position:fixed;inset:0;z-index:1;pointer-events:none;
+  background-image:repeating-linear-gradient(0deg,rgba(0,255,204,0.03) 0,transparent 1px,transparent 60px),
+  repeating-linear-gradient(90deg,rgba(0,255,204,0.03) 0,transparent 1px,transparent 60px)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:64px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;
+  background:rgba(0,4,8,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-hex{width:34px;height:34px;background:linear-gradient(135deg,var(--c1),var(--c2));
+  clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  animation:spin 8s linear infinite;display:flex;align-items:center;justify-content:center;font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.logo-name{font-family:var(--display);font-size:1.1rem;font-weight:900;letter-spacing:4px;
+  background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c1));
+  background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:gs 4s linear infinite}
+@keyframes gs{to{background-position:300% center}}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{font-family:var(--display);font-size:0.58rem;letter-spacing:2px;color:var(--muted);
+  text-decoration:none;text-transform:uppercase;transition:color 0.3s}
+.nav-links a:hover{color:var(--c1)}
+.nav-right{display:flex;align-items:center;gap:12px}
+.palette{display:flex;gap:6px}
+.dot{width:13px;height:13px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:transform 0.2s}
+.dot:hover,.dot.on{transform:scale(1.5);border-color:white}
+.connect-btn{font-family:var(--display);font-size:0.6rem;font-weight:700;letter-spacing:2px;
+  color:#000;background:linear-gradient(135deg,var(--c1),var(--c2));border:none;
+  padding:0.6rem 1.4rem;border-radius:4px;cursor:pointer;transition:opacity 0.3s,transform 0.2s}
+.connect-btn:hover{opacity:0.85;transform:translateY(-2px)}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:80px 2rem 4rem;position:relative;z-index:2}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,204,0.08);
+  border:1px solid var(--border);padding:0.45rem 1.2rem;border-radius:2px;
+  font-family:var(--mono);font-size:0.72rem;color:var(--c1);margin-bottom:2rem;
+  animation:fadedown 0.8s ease both}
+@keyframes fadedown{from{opacity:0;transform:translateY(-20px)}}
+.bdot{width:7px;height:7px;background:var(--c1);border-radius:50%;
+  animation:blink 1.4s infinite;box-shadow:0 0 8px var(--c1)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.2}}
+.hero h1{font-family:var(--display);font-size:clamp(2.8rem,8vw,7.5rem);font-weight:900;
+  line-height:0.92;letter-spacing:5px;animation:fadeup 0.9s ease 0.2s both}
+@keyframes fadeup{from{opacity:0;transform:translateY(40px)}}
+.l1{display:block;color:var(--text)}
+.l2{display:block;background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c1));
+  background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:gs 3s linear infinite}
+.l3{display:block;-webkit-text-stroke:2px var(--c2);color:transparent}
+.hero-sub{font-size:1.1rem;color:var(--muted);max-width:580px;margin:1.8rem auto 2.8rem;
+  line-height:1.8;animation:fadeup 0.9s ease 0.4s both}
+.hero-btns{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;animation:fadeup 0.9s ease 0.6s both}
+.btn-main{font-family:var(--display);font-size:0.65rem;font-weight:700;letter-spacing:3px;
+  color:#000;background:linear-gradient(135deg,var(--c1),var(--c2));border:none;
+  padding:1rem 2.5rem;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;
+  transition:transform 0.2s,box-shadow 0.2s}
+.btn-main:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(0,255,204,0.3)}
+.btn-out{font-family:var(--display);font-size:0.65rem;font-weight:600;letter-spacing:3px;
+  color:var(--c1);background:transparent;border:1px solid var(--c1);
+  padding:1rem 2.5rem;border-radius:4px;cursor:pointer;text-decoration:none;display:inline-block;
+  transition:background 0.3s,transform 0.2s}
+.btn-out:hover{background:rgba(0,255,204,0.1);transform:translateY(-3px)}
+
+/* TICKER */
+.ticker{background:rgba(0,0,0,0.7);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  overflow:hidden;white-space:nowrap;position:relative;z-index:2}
+.tick-wrap{display:inline-flex;animation:tick 30s linear infinite}
+@keyframes tick{to{transform:translateX(-50%)}}
+.ti{display:inline-flex;align-items:center;gap:8px;padding:0.7rem 2.5rem;
+  border-right:1px solid var(--border);font-family:var(--mono);font-size:0.68rem;color:var(--muted)}
+.tv{color:var(--c1);font-weight:600}.tg{color:#00ff88}
+
+/* BLOCKCHAIN VISUAL */
+.section{padding:5rem 2.5rem;position:relative;z-index:2}
+.sec-head{text-align:center;margin-bottom:3.5rem}
+.sec-tag{font-family:var(--mono);font-size:0.7rem;color:var(--c1);letter-spacing:4px;
+  text-transform:uppercase;margin-bottom:0.8rem}
+.sec-title{font-family:var(--display);font-size:clamp(1.8rem,3.5vw,3rem);
+  font-weight:900;letter-spacing:3px;line-height:1.1}
+.sec-sub{color:var(--muted);max-width:500px;margin:0.8rem auto 0;line-height:1.8;font-size:0.95rem}
+
+.chain-row{display:flex;align-items:center;overflow-x:auto;padding:1.5rem 0.5rem;gap:0;scrollbar-width:none}
+.chain-row::-webkit-scrollbar{display:none}
+.bunit{display:flex;align-items:center;flex-shrink:0}
+.bcard{width:165px;background:rgba(0,255,204,0.03);border:1px solid var(--border);
+  border-radius:4px;padding:1.1rem;position:relative;overflow:hidden;
+  transition:transform 0.3s,border-color 0.3s;cursor:pointer}
+.bcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--c1),var(--c2));
+  animation:scan 3s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes scan{0%,100%{opacity:0.3}50%{opacity:1}}
+.bcard:hover{transform:translateY(-8px);border-color:var(--c1)}
+.bb{position:absolute;top:7px;right:7px;font-family:var(--mono);font-size:0.52rem;
+  color:#000;padding:2px 6px;border-radius:2px}
+.bnum{font-family:var(--mono);font-size:0.6rem;color:var(--c2);margin-bottom:0.5rem}
+.bhash{font-family:var(--mono);font-size:0.56rem;color:var(--muted);word-break:break-all;
+  margin-bottom:0.6rem;line-height:1.6}
+.bhash span{color:var(--c1)}
+.bdata{font-family:var(--mono);font-size:0.58rem;color:var(--muted);line-height:1.9}
+.bk{color:var(--c4)}.bv{color:var(--text)}
+.chain-link{width:50px;height:2px;background:linear-gradient(90deg,var(--c2),var(--c1));
+  position:relative;flex-shrink:0}
+.chain-link::after{content:'▶';position:absolute;right:-4px;top:50%;transform:translateY(-50%);
+  color:var(--c1);font-size:9px;animation:blink 1.5s infinite}
+.bpend{opacity:0.3;border-style:dashed;animation:pp 2s ease-in-out infinite}
+@keyframes pp{0%,100%{opacity:0.2}50%{opacity:0.5}}
+#inspector{display:none;max-width:600px;margin:1.5rem auto 0;
+  background:rgba(0,0,0,0.7);border:1px solid var(--c1);border-radius:6px;
+  padding:1.2rem;font-family:var(--mono);font-size:0.72rem}
+
+/* FLOW */
+.flow-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1px;border:1px solid var(--border);border-radius:8px;overflow:hidden;max-width:1100px;margin:0 auto}
+.fstep{background:var(--bg2);padding:2.2rem 1.8rem;position:relative;overflow:hidden;transition:background 0.3s}
+.fstep:hover{background:rgba(0,255,204,0.05)}
+.fsn{font-family:var(--display);font-size:4rem;font-weight:900;
+  color:rgba(0,255,204,0.05);position:absolute;top:0;right:0.8rem;line-height:1}
+.fsico{font-size:2rem;margin-bottom:1rem;display:block}
+.fst{font-family:var(--display);font-size:0.78rem;font-weight:700;letter-spacing:2px;margin-bottom:0.7rem}
+.fsd{color:var(--muted);font-size:0.85rem;line-height:1.7}
+.fsc{font-family:var(--mono);font-size:0.6rem;color:var(--c1);margin-top:0.8rem;
+  background:rgba(0,255,204,0.06);border:1px solid rgba(0,255,204,0.15);
+  padding:0.4rem 0.7rem;border-radius:3px;word-break:break-all;line-height:1.6}
+
+/* APP DASHBOARD */
+.app-wrap{max-width:1020px;margin:0 auto;background:rgba(4,12,20,0.98);
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+  box-shadow:0 30px 100px rgba(0,0,0,0.7),0 0 80px rgba(0,255,204,0.05)}
+.chrome{background:rgba(0,255,204,0.04);border-bottom:1px solid var(--border);
+  padding:0.7rem 1.2rem;display:flex;align-items:center;gap:0.8rem}
+.dots{display:flex;gap:6px}
+.d{width:11px;height:11px;border-radius:50%}
+.dr{background:#ff5f57}.dy{background:#febc2e}.dg{background:#28c840;animation:blink 2s infinite}
+.url-bar{flex:1;background:rgba(0,0,0,0.35);border:1px solid var(--border);border-radius:20px;
+  padding:0.28rem 1rem;font-family:var(--mono);font-size:0.68rem;color:var(--muted)}
+.tabs{display:flex;gap:3px}
+.tab{font-family:var(--mono);font-size:0.6rem;color:var(--muted);
+  background:rgba(0,255,204,0.06);border:1px solid var(--border);
+  padding:0.28rem 0.8rem;border-radius:4px 4px 0 0;cursor:pointer;transition:all 0.2s}
+.tab.on,.tab:hover{color:var(--c1);background:rgba(0,255,204,0.15)}
+.tab.on{border-bottom-color:transparent}
+.layout{display:grid;grid-template-columns:250px 1fr;min-height:600px}
+
+/* SIDEBAR */
+.sidebar{border-right:1px solid var(--border);padding:1.3rem;background:rgba(0,0,0,0.2)}
+.slbl{font-family:var(--mono);font-size:0.57rem;color:var(--muted);letter-spacing:3px;
+  text-transform:uppercase;margin-bottom:0.7rem;padding-bottom:0.4rem;border-bottom:1px solid var(--border)}
+.ssec{margin-bottom:1.8rem}
+.wcard{background:linear-gradient(135deg,rgba(0,255,204,0.07),rgba(123,47,255,0.07));
+  border:1px solid var(--border);border-radius:5px;padding:0.9rem;margin-bottom:0.7rem}
+.wlbl{font-family:var(--mono);font-size:0.56rem;color:var(--muted);margin-bottom:0.3rem}
+.waddr{font-family:var(--mono);font-size:0.65rem;color:var(--c1);word-break:break-all;line-height:1.5}
+.wbal{display:flex;justify-content:space-between;margin-top:0.7rem;
+  padding-top:0.7rem;border-top:1px solid var(--border)}
+.wbl{font-family:var(--mono);font-size:0.56rem;color:var(--muted)}
+.wbv{font-family:var(--mono);font-size:0.68rem;color:var(--c4)}
+.netpill{display:flex;align-items:center;gap:6px;background:rgba(0,255,204,0.06);
+  border:1px solid var(--border);padding:0.35rem 0.7rem;border-radius:20px;
+  font-family:var(--mono);font-size:0.6rem;color:var(--c1);justify-content:center}
+.sitem{display:flex;align-items:center;gap:0.7rem;padding:0.65rem 0.7rem;border-radius:4px;
+  cursor:pointer;transition:all 0.2s;font-size:0.85rem;font-weight:500;
+  color:var(--muted);margin-bottom:2px}
+.sitem:hover,.sitem.on{background:rgba(0,255,204,0.1);color:var(--c1)}
+.sitem.on{border-left:2px solid var(--c1)}
+.sbadge{margin-left:auto;background:var(--c2);color:#fff;
+  font-family:var(--mono);font-size:0.55rem;padding:1px 5px;border-radius:10px}
+.contract-info{font-family:var(--mono);font-size:0.6rem;color:var(--muted);line-height:2.2}
+.contract-info span{color:var(--c1)}
+
+/* MAIN PANEL */
+.main{padding:1.3rem}
+.panel{display:none}.panel.on{display:block}
+.phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem}
+.ptitle{font-family:var(--display);font-size:0.9rem;font-weight:700;letter-spacing:2px}
+.chip{font-family:var(--mono);font-size:0.6rem;padding:0.28rem 0.7rem;border-radius:3px;
+  background:rgba(0,255,204,0.08);border:1px solid rgba(0,255,204,0.25);color:var(--c1)}
+
+/* CONNECT PROMPT */
+.cprompt{text-align:center;padding:2rem;border:2px dashed var(--border);
+  border-radius:8px;margin-bottom:1.2rem}
+.cprompt-icon{font-size:3rem;margin-bottom:0.8rem}
+.cprompt h3{font-size:1rem;font-weight:600;margin-bottom:0.4rem}
+.cprompt p{color:var(--muted);font-size:0.85rem;margin-bottom:1.2rem}
+.cprompt-btn{font-family:var(--display);font-size:0.62rem;font-weight:700;letter-spacing:2px;
+  color:#000;background:linear-gradient(135deg,var(--c1),var(--c2));border:none;
+  padding:0.8rem 2rem;border-radius:4px;cursor:pointer;transition:transform 0.2s,opacity 0.2s}
+.cprompt-btn:hover{transform:translateY(-2px);opacity:0.9}
+
+/* FORM */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0.9rem}
+.full{grid-column:1/-1}
+.fg{display:flex;flex-direction:column;gap:0.35rem}
+.flbl{font-family:var(--mono);font-size:0.6rem;color:var(--muted);letter-spacing:2px;text-transform:uppercase}
+.fin{background:rgba(0,0,0,0.5);border:1px solid var(--border);border-radius:4px;
+  padding:0.7rem 0.9rem;color:var(--text);font-family:var(--body);font-size:0.92rem;
+  font-weight:500;outline:none;transition:border-color 0.3s;width:100%}
+.fin:focus{border-color:var(--c1);box-shadow:0 0 0 3px rgba(0,255,204,0.07)}
+.fin::placeholder{color:rgba(224,247,244,0.2)}
+.fin option{background:var(--bg2)}
+.fupload{border:2px dashed var(--border);border-radius:6px;padding:1.5rem;
+  text-align:center;cursor:pointer;transition:all 0.3s}
+.fupload:hover{border-color:var(--c1);background:rgba(0,255,204,0.03)}
+.pnote{background:rgba(123,47,255,0.08);border:1px solid rgba(123,47,255,0.3);
+  border-radius:4px;padding:0.7rem 0.9rem;font-family:var(--mono);font-size:0.65rem;
+  color:rgba(200,180,255,0.8);display:flex;gap:0.7rem;line-height:1.6}
+.arow{display:flex;gap:0.7rem;margin-top:1.2rem;flex-wrap:wrap}
+.abtn{font-family:var(--display);font-size:0.6rem;font-weight:700;letter-spacing:2px;
+  border:none;padding:0.8rem 1.5rem;cursor:pointer;transition:all 0.2s;
+  text-transform:uppercase;border-radius:4px}
+.abtn:hover{transform:translateY(-2px);opacity:0.9}
+.abtn-p{background:linear-gradient(135deg,var(--c1),var(--c2));color:#000;flex:1}
+.abtn-y{background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.4);color:var(--c4)}
+.abtn-s{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.abtn-s:hover{border-color:var(--c1);color:var(--c1)}
+
+/* TX CONSOLE */
+.txcon{background:rgba(0,0,0,0.6);border:1px solid var(--border);border-radius:5px;
+  padding:1rem;margin-top:1.2rem;font-family:var(--mono);font-size:0.68rem;
+  display:none;max-height:200px;overflow-y:auto}
+.txcon::-webkit-scrollbar{width:3px}
+.txcon::-webkit-scrollbar-thumb{background:var(--c2);border-radius:2px}
+.tprog{height:3px;background:rgba(0,255,204,0.1);border-radius:2px;margin-bottom:0.8rem;overflow:hidden}
+.tbar{height:100%;width:0%;background:linear-gradient(90deg,var(--c1),var(--c2));transition:width 0.4s}
+.tline{padding:2px 0;line-height:1.9;border-bottom:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+.c1{color:var(--c1)}.c2{color:var(--c2)}.c3{color:var(--c3)}.c4{color:var(--c4)}.cg{color:#00ff88}
+
+/* STATUS TAB */
+.ssearch{display:flex;gap:0.7rem;margin-bottom:1.2rem}
+.ssearch .fin{flex:1}
+.qbtn{font-family:var(--mono);font-size:0.68rem;color:#000;background:var(--c1);
+  border:none;padding:0.7rem 1.2rem;border-radius:4px;cursor:pointer;
+  white-space:nowrap;transition:opacity 0.3s}
+.qbtn:hover{opacity:0.85}
+.sres{background:rgba(0,255,204,0.03);border:1px solid var(--border);border-radius:5px;padding:1.2rem}
+.rrow{display:flex;justify-content:space-between;padding:0.6rem 0;
+  border-bottom:1px solid rgba(255,255,255,0.04)}
+.rrow:last-child{border:none}
+.rk{font-family:var(--mono);font-size:0.65rem;color:var(--muted)}
+.rv{font-family:var(--mono);font-size:0.68rem;color:var(--text)}
+.rv.ok{color:#00ff88}.rv.hi{color:var(--c1)}.rv.ya{color:var(--c4)}
+
+/* SETTINGS TAB */
+.sgrid{display:flex;flex-direction:column;gap:0.8rem}
+.srow2{display:flex;justify-content:space-between;align-items:center;
+  padding:0.9rem 1rem;background:rgba(0,0,0,0.2);border:1px solid var(--border);
+  border-radius:5px;gap:1rem;transition:border-color 0.3s}
+.srow2:hover{border-color:var(--c2)}
+.si h4{font-size:0.88rem;font-weight:600;margin-bottom:0.2rem}
+.si p{font-size:0.75rem;color:var(--muted);line-height:1.5}
+.tog{width:42px;height:22px;background:rgba(0,255,204,0.1);border:1px solid var(--border);
+  border-radius:11px;position:relative;cursor:pointer;transition:all 0.3s;flex-shrink:0}
+.tog.on{background:rgba(0,255,204,0.35);border-color:var(--c1)}
+.tknob{width:16px;height:16px;background:#fff;border-radius:50%;
+  position:absolute;top:2px;left:2px;transition:left 0.3s}
+.tog.on .tknob{left:22px;background:var(--c1)}
+.ssel{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:4px;
+  padding:0.38rem 0.7rem;color:var(--c1);font-family:var(--mono);font-size:0.68rem;cursor:pointer;outline:none}
+.sinput{background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:4px;
+  padding:0.38rem 0.7rem;color:var(--c1);font-family:var(--mono);font-size:0.68rem;outline:none;
+  text-align:right}
+
+/* HISTORY TAB */
+.hlist{display:flex;flex-direction:column;gap:0.7rem}
+.hitem{display:grid;grid-template-columns:auto 1fr auto;gap:0.8rem;align-items:center;
+  padding:0.9rem 1rem;background:rgba(0,0,0,0.2);border:1px solid var(--border);
+  border-radius:5px;transition:border-color 0.3s}
+.hitem:hover{border-color:var(--c1)}
+.hico{width:38px;height:38px;background:rgba(0,255,204,0.07);border:1px solid var(--border);
+  border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.hname{font-size:0.88rem;font-weight:600;margin-bottom:0.2rem}
+.hhash{font-family:var(--mono);font-size:0.6rem;color:var(--muted)}
+.hst{font-family:var(--mono);font-size:0.6rem;padding:0.25rem 0.6rem;border-radius:3px;
+  background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88}
+.hempty{text-align:center;padding:2rem;font-family:var(--mono);font-size:0.7rem;color:var(--muted)}
+
+/* FEATURES */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));
+  gap:1.2rem;max-width:1100px;margin:0 auto}
+.fc{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:1.8rem;
+  position:relative;overflow:hidden;transition:all 0.3s;cursor:default}
+.fc::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(0,255,204,0.05),transparent);transition:left 0.5s}
+.fc:hover::before{left:100%}
+.fc:hover{transform:translateY(-5px);border-color:var(--c1)}
+.ficon{width:48px;height:48px;background:rgba(0,255,204,0.07);border:1px solid var(--border);
+  border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;margin-bottom:1rem;transition:all 0.3s}
+.fc:hover .ficon{background:rgba(0,255,204,0.15);border-color:var(--c1)}
+.ftitle{font-family:var(--display);font-size:0.78rem;font-weight:700;letter-spacing:2px;margin-bottom:0.7rem}
+.fdesc{color:var(--muted);font-size:0.85rem;line-height:1.7}
+.ftag{display:inline-block;margin-top:0.8rem;font-family:var(--mono);font-size:0.57rem;
+  color:var(--c2);background:rgba(123,47,255,0.1);border:1px solid rgba(123,47,255,0.3);
+  padding:0.18rem 0.5rem;border-radius:3px}
+
+/* ARCHITECTURE */
+.arch-wrap{max-width:880px;margin:2.5rem auto 0}
+.anode{display:flex;align-items:center;gap:1.2rem;padding:1.1rem 1.3rem;
+  background:var(--bg2);border:1px solid var(--border);transition:all 0.3s;cursor:default}
+.anode:first-child{border-radius:7px 7px 0 0}
+.anode:last-child{border-radius:0 0 7px 7px}
+.anode:hover{border-color:var(--c1);background:rgba(0,255,204,0.03)}
+.aconn{display:flex;align-items:center;justify-content:center;height:38px;
+  background:var(--bg2);border-left:1px solid var(--border);border-right:1px solid var(--border);position:relative}
+.aline{width:2px;height:100%;background:linear-gradient(to bottom,var(--c1),var(--c2));
+  position:absolute;left:50%;transform:translateX(-50%)}
+.aarrow{position:absolute;color:var(--c2);font-size:0.9rem;animation:adrop 1.5s ease-in-out infinite;z-index:1}
+@keyframes adrop{0%{top:4px;opacity:0}50%{opacity:1}100%{top:26px;opacity:0}}
+.albl{font-family:var(--mono);font-size:0.57rem;color:var(--muted);background:var(--bg2);padding:0 0.4rem;z-index:1}
+.aico{font-size:1.6rem;min-width:36px;text-align:center}
+.ainf{flex:1}
+.aname{font-family:var(--display);font-size:0.82rem;font-weight:700;letter-spacing:2px;margin-bottom:0.25rem}
+.adesc{color:var(--muted);font-size:0.78rem;line-height:1.5}
+.apill{font-family:var(--mono);font-size:0.58rem;color:var(--c1);
+  background:rgba(0,255,204,0.08);border:1px solid rgba(0,255,204,0.2);
+  padding:0.25rem 0.7rem;border-radius:3px;white-space:nowrap}
+
+/* SETUP */
+.setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:2.5rem;max-width:980px;margin:0 auto;align-items:start}
+.steps-list{display:flex;flex-direction:column;gap:1.2rem}
+.cstep{display:flex;gap:1rem;align-items:flex-start}
+.cnum{font-family:var(--display);font-size:0.65rem;font-weight:900;color:#000;
+  background:linear-gradient(135deg,var(--c1),var(--c2));width:30px;height:30px;
+  border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cinfo h4{font-size:0.9rem;font-weight:600;margin-bottom:0.35rem}
+.cinfo p{color:var(--muted);font-size:0.82rem;line-height:1.6}
+.ccode{font-family:var(--mono);font-size:0.6rem;color:var(--c1);
+  background:rgba(0,255,204,0.06);border:1px solid rgba(0,255,204,0.15);
+  padding:0.38rem 0.7rem;border-radius:3px;margin-top:0.4rem;display:block;
+  word-break:break-all;line-height:1.6}
+.term-box{background:rgba(0,0,0,0.8);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.term-head{background:rgba(0,255,204,0.05);border-bottom:1px solid var(--border);
+  padding:0.65rem 1rem;display:flex;align-items:center;gap:0.7rem}
+.term-body{padding:1.2rem;font-family:var(--mono);font-size:0.68rem;line-height:2}
+.tp{color:var(--c1)}.tc{color:var(--text)}.to{color:var(--muted)}
+.tok{color:#00ff88}.ta{color:var(--c4)}
+.tcur{display:inline-block;width:7px;height:13px;background:var(--c1);
+  animation:cb 1s step-end infinite;vertical-align:text-bottom}
+@keyframes cb{0%,100%{opacity:1}50%{opacity:0}}
+
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:2.5rem;text-align:center;position:relative;z-index:2}
+.flogo{font-family:var(--display);font-size:1.8rem;font-weight:900;letter-spacing:5px;
+  background:linear-gradient(90deg,var(--c1),var(--c2),var(--c3),var(--c1));
+  background-size:300%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  animation:gs 4s linear infinite;margin-bottom:0.8rem}
+footer p{color:var(--muted);font-size:0.82rem;line-height:1.8}
+.flinks{display:flex;justify-content:center;gap:1.8rem;margin-top:1.2rem;list-style:none}
+.flinks a{font-family:var(--mono);font-size:0.65rem;color:var(--muted);text-decoration:none;transition:color 0.3s}
+.flinks a:hover{color:var(--c1)}
+
+/* REVEAL */
+.rv{opacity:0;transform:translateY(35px);transition:opacity 0.7s ease,transform 0.7s ease}
+.rv.vis{opacity:1;transform:translateY(0)}
+.d1{transition-delay:0.1s}.d2{transition-delay:0.2s}.d3{transition-delay:0.3s}
+.d4{transition-delay:0.4s}.d5{transition-delay:0.5s}.d6{transition-delay:0.6s}
+
+@media(max-width:860px){
+  nav{padding:0 1rem}.nav-links{display:none}
+  .layout{grid-template-columns:1fr}.sidebar{display:none}
+  .setup-grid{grid-template-columns:1fr}
+  .fgrid{grid-template-columns:1fr}
+  .section{padding:3.5rem 1.2rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<div class="grid-overlay"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-hex">⬡</div>
+    <div class="logo-name">CHAIN·ID</div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#chain">Blockchain</a></li>
+    <li><a href="#app">Verify</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#arch">Architecture</a></li>
+    <li><a href="#setup">Setup</a></li>
+  </ul>
+  <div class="nav-right">
+    <div class="palette">
+      <div class="dot on" style="background:#00ffcc" onclick="setTheme('cyan',this)"></div>
+      <div class="dot" style="background:#ff2d78" onclick="setTheme('pink',this)"></div>
+      <div class="dot" style="background:#ffaa00" onclick="setTheme('gold',this)"></div>
+      <div class="dot" style="background:#7b2fff" onclick="setTheme('purple',this)"></div>
+      <div class="dot" style="background:#00ff88" onclick="setTheme('green',this)"></div>
+    </div>
+    <button class="connect-btn" id="navConnectBtn" onclick="connectWallet()">CONNECT WALLET</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="eyebrow"><div class="bdot"></div>ETHEREUM · METAMASK · GANACHE 5777 · NODE.JS · MONGODB</div>
+  <h1>
+    <span class="l1">DECENTRALIZED</span>
+    <span class="l2">IDENTITY</span>
+    <span class="l3">VERIFIED</span>
+  </h1>
+  <p class="hero-sub">Zero-trust identity verification on Ethereum. Your data is hashed in your browser, stored on-chain via smart contract, and linked to your MetaMask wallet — permanently.</p>
+  <div class="hero-btns">
+    <a href="#app" class="btn-main">VERIFY MY IDENTITY</a>
+    <a href="#setup" class="btn-out">HOW TO CONNECT →</a>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="tick-wrap">
+    <div class="ti">NETWORK <span class="tv">GANACHE LOCAL</span></div>
+    <div class="ti">CHAIN ID <span class="tv">5777</span></div>
+    <div class="ti">RPC <span class="tv">:7545</span></div>
+    <div class="ti">BLOCKS <span class="tv" id="tkb">1</span></div>
+    <div class="ti">VERIFIED <span class="tv" id="tkv">0</span></div>
+    <div class="ti">HASH <span class="tv">SHA-256</span></div>
+    <div class="ti">BACKEND <span class="tv">:5000</span></div>
+    <div class="ti">DB <span class="tv">MongoDB</span></div>
+    <div class="ti">STATUS <span class="tg">● LIVE</span></div>
+    <!-- dup -->
+    <div class="ti">NETWORK <span class="tv">GANACHE LOCAL</span></div>
+    <div class="ti">CHAIN ID <span class="tv">5777</span></div>
+    <div class="ti">RPC <span class="tv">:7545</span></div>
+    <div class="ti">BLOCKS <span class="tv">1</span></div>
+    <div class="ti">VERIFIED <span class="tv">0</span></div>
+    <div class="ti">HASH <span class="tv">SHA-256</span></div>
+    <div class="ti">BACKEND <span class="tv">:5000</span></div>
+    <div class="ti">DB <span class="tv">MongoDB</span></div>
+    <div class="ti">STATUS <span class="tg">● LIVE</span></div>
+  </div>
+</div>
+
+<!-- BLOCKCHAIN VISUAL -->
+<section class="section" id="chain">
+  <div class="sec-head">
+    <div class="sec-tag rv">// Live Blockchain</div>
+    <h2 class="sec-title rv d1">HOW YOUR IDENTITY<br>LIVES ON THE CHAIN</h2>
+    <p class="sec-sub rv d2">Each verification creates an immutable block. Click any block to inspect it.</p>
+  </div>
+  <div class="chain-row rv d3" id="chainRow">
+    <div class="bunit">
+      <div class="bcard" style="--d:0s" onclick="inspBlock(0)">
+        <div class="bb" style="background:#555">GENESIS</div>
+        <div class="bnum">BLOCK #0</div>
+        <div class="bhash">PREV: <span>0x0000...0000</span></div>
+        <div class="bhash">HASH: <span>0x4a9f...e71c</span></div>
+        <div class="bdata">
+          <div><span class="bk">TYPE: </span><span class="bv">GENESIS</span></div>
+          <div><span class="bk">TX: </span><span class="bv">0</span></div>
+        </div>
+      </div>
+    </div>
+    <div id="dynBlocks"></div>
+    <div class="bunit">
+      <div class="chain-link"></div>
+      <div class="bcard bpend">
+        <div class="bb" style="background:var(--c4);color:#000">PENDING</div>
+        <div class="bnum">BLOCK #?</div>
+        <div class="bhash">Awaiting next <span>verification...</span></div>
+        <div class="bdata"><div><span class="bk">STATUS: </span><span class="bv">MEMPOOL</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div id="inspector"></div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" style="background:linear-gradient(180deg,transparent,rgba(0,255,204,0.015),transparent)">
+  <div class="sec-head">
+    <div class="sec-tag rv">// Data Flow</div>
+    <h2 class="sec-title rv d1">FROM BROWSER TO BLOCKCHAIN</h2>
+  </div>
+  <div class="flow-grid rv d2">
+    <div class="fstep"><div class="fsn">01</div><span class="fsico">🦊</span><div class="fst">MetaMask Connects</div><div class="fsd">window.ethereum injected by MetaMask. We call eth_requestAccounts to get your wallet address — your permanent on-chain identity anchor.</div><div class="fsc">window.ethereum.request({method:'eth_requestAccounts'})</div></div>
+    <div class="fstep"><div class="fsn">02</div><span class="fsico">🔐</span><div class="fst">Data Hashed Locally</div><div class="fsd">Your name, DOB, ID never leave your browser. Web Crypto API creates a SHA-256 hash. Only the 64-byte fingerprint goes on-chain.</div><div class="fsc">crypto.subtle.digest('SHA-256', data)</div></div>
+    <div class="fstep"><div class="fsn">03</div><span class="fsico">📡</span><div class="fst">TX Sent to Ganache</div><div class="fsd">Web3.js sends the signed transaction to Ganache on port 7545, Chain ID 5777. MetaMask signs with your private key.</div><div class="fsc">contract.methods.verifyIdentity(hash).send()</div></div>
+    <div class="fstep"><div class="fsn">04</div><span class="fsico">⛓️</span><div class="fst">Smart Contract Runs</div><div class="fsd">IdentityVerification.sol stores wallet→hash→timestamp in a Solidity mapping. Block mined. Immutable forever on Ganache.</div><div class="fsc">identities[msg.sender] = Identity(hash, timestamp)</div></div>
+    <div class="fstep"><div class="fsn">05</div><span class="fsico">💾</span><div class="fst">Backend Records TX</div><div class="fsd">Frontend POSTs TX hash, wallet, block number to Node.js API. Express saves to MongoDB — zero personal data stored.</div><div class="fsc">POST /api/verify → MongoDB.save({wallet, txHash})</div></div>
+    <div class="fstep"><div class="fsn">06</div><span class="fsico">✅</span><div class="fst">Verifiable Anywhere</div><div class="fsd">Any dApp calls contract.getIdentity(wallet) to get hash, timestamp and verified status — no central authority needed.</div><div class="fsc">contract.methods.getIdentity(wallet).call()</div></div>
+  </div>
+</section>
+
+<!-- APP DASHBOARD -->
+<section class="section" id="app">
+  <div class="sec-head">
+    <div class="sec-tag rv">// Dashboard</div>
+    <h2 class="sec-title rv d1">VERIFICATION PLATFORM</h2>
+  </div>
+  <div class="app-wrap rv d2">
+    <!-- Chrome bar -->
+    <div class="chrome">
+      <div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div>
+      <div class="url-bar">🔒 chain-id.local:3000 — Decentralized Identity Verification</div>
+      <div class="tabs">
+        <div class="tab on" onclick="showTab('verify',this)">Verify</div>
+        <div class="tab" onclick="showTab('status',this)">Status</div>
+        <div class="tab" onclick="showTab('history',this)">History</div>
+        <div class="tab" onclick="showTab('settings',this)">Settings</div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="ssec">
+          <div class="slbl">Wallet</div>
+          <div class="wcard">
+            <div class="wlbl">ADDRESS</div>
+            <div class="waddr" id="sAddr">Not Connected</div>
+            <div class="wbal">
+              <div><div class="wbl">BALANCE</div><div class="wbv" id="sBal">-- ETH</div></div>
+              <div><div class="wbl">NETWORK</div><div class="wbv" id="sNet" style="color:var(--c3)">NONE</div></div>
+            </div>
+          </div>
+          <div class="netpill"><div class="bdot" style="width:6px;height:6px"></div><span id="netName">No Network</span></div>
+        </div>
+        <div class="ssec">
+          <div class="slbl">Navigation</div>
+          <div class="sitem on" onclick="showTab('verify',null);setSA(this)"><span>🔐</span>Verify Identity</div>
+          <div class="sitem" onclick="showTab('status',null);setSA(this)"><span>🔍</span>Check Status</div>
+          <div class="sitem" onclick="showTab('history',null);setSA(this)"><span>📋</span>History<span class="sbadge" id="hbadge">0</span></div>
+          <div class="sitem" onclick="showTab('settings',null);setSA(this)"><span>⚙️</span>Settings</div>
+        </div>
+        <div class="ssec">
+          <div class="slbl">Contract Info</div>
+          <div class="contract-info">
+            <div>NET ID: <span>5777</span></div>
+            <div>PORT: <span>7545</span></div>
+            <div>SOLIDITY: <span>0.8.19</span></div>
+            <div>BACKEND: <span style="color:var(--c4)">:5000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN PANELS -->
+      <div class="main">
+
+        <!-- VERIFY PANEL -->
+        <div class="panel on" id="panel-verify">
+          <div class="phead">
+            <div class="ptitle">NEW VERIFICATION</div>
+            <div class="chip" id="chipSt">● WALLET NOT CONNECTED</div>
+          </div>
+
+          <!-- Connect Prompt -->
+          <div class="cprompt" id="cprompt">
+            <div class="cprompt-icon">🦊</div>
+            <h3>Connect MetaMask to Begin</h3>
+            <p>Your wallet is your identity. No sign-up, no password, no central database.</p>
+            <button class="cprompt-btn" onclick="connectWallet()">🔗 CONNECT METAMASK</button>
+          </div>
+
+          <!-- Form (hidden until wallet connected) -->
+          <div id="vform" style="display:none">
+            <div class="fgrid">
+              <div class="fg"><label class="flbl">Full Legal Name</label><input class="fin" id="fn" type="text" placeholder="John Michael Doe"/></div>
+              <div class="fg"><label class="flbl">Date of Birth</label><input class="fin" id="fd" type="date"/></div>
+              <div class="fg"><label class="flbl">Nationality</label><input class="fin" id="fnt" type="text" placeholder="India / USA etc."/></div>
+              <div class="fg"><label class="flbl">Document Type</label>
+                <select class="fin" id="fdt">
+                  <option>Passport</option>
+                  <option>Aadhaar Card</option>
+                  <option>PAN Card</option>
+                  <option>Voter ID</option>
+                  <option>Driver's License</option>
+                  <option>National ID</option>
+                </select>
+              </div>
+              <div class="fg"><label class="flbl">Document Number</label><input class="fin" id="fdn" type="text" placeholder="P123456789"/></div>
+              <div class="fg"><label class="flbl">Email Address</label><input class="fin" id="fem" type="email" placeholder="you@example.com"/></div>
+              <div class="fg full">
+                <label class="flbl">Upload Document (Optional)</label>
+                <div class="fupload" onclick="document.getElementById('ffile').click()">
+                  <div>📁</div>
+                  <div style="font-size:0.85rem;color:var(--muted);margin-top:0.4rem">Click to upload · File hash stored, not the file</div>
+                  <input type="file" id="ffile" style="display:none" onchange="handleFile(this)"/>
+                </div>
+                <div id="filest" style="font-family:var(--mono);font-size:0.64rem;color:var(--c1);margin-top:0.3rem;display:none"></div>
+              </div>
+              <div class="fg full">
+                <div class="pnote">
+                  <span style="font-size:1rem;flex-shrink:0">🛡️</span>
+                  <span><strong style="color:var(--c2)">Privacy:</strong> Raw data (name, DOB, ID) is hashed via SHA-256 in your browser. Only the cryptographic fingerprint goes on-chain. Your actual data never leaves your device.</span>
+                </div>
+              </div>
+            </div>
+            <div class="arow">
+              <button class="abtn abtn-p" onclick="submitVerification()">⛓️ SUBMIT TO BLOCKCHAIN</button>
+              <button class="abtn abtn-y" onclick="previewHash()">🔍 PREVIEW HASH</button>
+              <button class="abtn abtn-s" onclick="clearForm()">CLEAR</button>
+            </div>
+          </div>
+
+          <!-- TX Console -->
+          <div class="txcon" id="txcon">
+            <div class="tprog"><div class="tbar" id="tbar"></div></div>
+            <div id="txlog"></div>
+          </div>
+        </div>
+
+        <!-- STATUS PANEL -->
+        <div class="panel" id="panel-status">
+          <div class="phead"><div class="ptitle">CHECK VERIFICATION STATUS</div></div>
+          <div class="ssearch">
+            <input class="fin" id="saddr" placeholder="Enter wallet address: 0x..."/>
+            <button class="qbtn" onclick="checkStatus()">QUERY CHAIN</button>
+          </div>
+          <div class="sres" id="sres">
+            <div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.7rem;color:var(--muted)">
+              Enter a wallet address to query blockchain verification status.
+            </div>
+          </div>
+        </div>
+
+        <!-- HISTORY PANEL -->
+        <div class="panel" id="panel-history">
+          <div class="phead"><div class="ptitle">VERIFICATION HISTORY</div></div>
+          <div class="hlist" id="hlist">
+            <div class="hempty">No verifications yet. Connect wallet and verify to see history.</div>
+          </div>
+        </div>
+
+        <!-- SETTINGS PANEL -->
+        <div class="panel" id="panel-settings">
+          <div class="phead"><div class="ptitle">PLATFORM SETTINGS</div></div>
+          <div class="sgrid">
+            <div class="srow2"><div class="si"><h4>Auto-Connect Wallet</h4><p>Reconnect MetaMask on page load if previously authorized.</p></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tknob"></div></div></div>
+            <div class="srow2"><div class="si"><h4>Hash Preview Before Submit</h4><p>Show SHA-256 hash for review before writing to blockchain.</p></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tknob"></div></div></div>
+            <div class="srow2"><div class="si"><h4>Save to MongoDB Backend</h4><p>After blockchain TX, save audit metadata to Node.js backend.</p></div><div class="tog on" onclick="this.classList.toggle('on')"><div class="tknob"></div></div></div>
+            <div class="srow2"><div class="si"><h4>Browser Notifications</h4><p>Show desktop notification when transaction is confirmed.</p></div><div class="tog" onclick="this.classList.toggle('on')"><div class="tknob"></div></div></div>
+            <div class="srow2"><div class="si"><h4>Target Network</h4><p>Select blockchain network for contract interaction.</p></div><select class="ssel"><option>Ganache Local (5777)</option><option>Sepolia Testnet</option><option>Ethereum Mainnet</option></select></div>
+            <div class="srow2"><div class="si"><h4>Backend API URL</h4><p>Node.js server endpoint for metadata storage.</p></div><input class="sinput" value="http://localhost:5000"/></div>
+            <div class="srow2"><div class="si"><h4>Gas Limit</h4><p>Maximum gas per verification transaction.</p></div><input class="sinput" style="width:110px" value="300000"/></div>
+            <div class="srow2"><div class="si"><h4>Color Theme</h4><p>Change platform accent color.</p></div><select class="ssel" onchange="setTheme(this.value,null)"><option value="cyan">Cyan</option><option value="pink">Pink</option><option value="gold">Gold</option><option value="purple">Purple</option><option value="green">Green</option></select></div>
+          </div>
+        </div>
+
+      </div><!-- main -->
+    </div><!-- layout -->
+  </div><!-- app-wrap -->
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="sec-head">
+    <div class="sec-tag rv">// Capabilities</div>
+    <h2 class="sec-title rv d1">BUILT FOR SOVEREIGNTY</h2>
+    <p class="sec-sub rv d2">Every feature engineered for decentralization, privacy and tamper-proof verification.</p>
+  </div>
+  <div class="feat-grid">
+    <div class="fc rv d1"><div class="ficon">🔐</div><div class="ftitle">ZERO-KNOWLEDGE HASH</div><div class="fdesc">Raw personal data never leaves your browser. SHA-256 via Web Crypto API creates a 64-byte fingerprint. Mathematically impossible to reverse.</div><span class="ftag">Web Crypto API</span></div>
+    <div class="fc rv d2"><div class="ficon">⛓️</div><div class="ftitle">IMMUTABLE ON-CHAIN</div><div class="fdesc">Once mined into an Ethereum block, your verification is permanent. No authority — including us — can alter or delete it.</div><span class="ftag">Solidity 0.8.x</span></div>
+    <div class="fc rv d3"><div class="ficon">🦊</div><div class="ftitle">METAMASK AUTH</div><div class="fdesc">Your Ethereum wallet IS your identity. No passwords, no accounts. MetaMask signs every TX with your private key — which never leaves your device.</div><span class="ftag">EIP-1193</span></div>
+    <div class="fc rv d4"><div class="ficon">🏗️</div><div class="ftitle">TRUFFLE DEPLOY</div><div class="fdesc">One-command deployment with truffle migrate. Works on Ganache (5777), Sepolia testnet, and Ethereum mainnet with zero code changes.</div><span class="ftag">truffle migrate</span></div>
+    <div class="fc rv d5"><div class="ficon">🟩</div><div class="ftitle">AUDIT TRAIL</div><div class="fdesc">Node.js + Express saves TX hashes and non-sensitive metadata to MongoDB. Compliance reporting without storing personal data.</div><span class="ftag">Express + MongoDB</span></div>
+    <div class="fc rv d6"><div class="ficon">🌐</div><div class="ftitle">INSTANT VERIFY</div><div class="fdesc">Any dApp calls contract.getIdentity(wallet) to instantly verify someone — no central authority or database query needed.</div><span class="ftag">Public ABI Call</span></div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="section" id="arch" style="background:linear-gradient(180deg,transparent,rgba(0,255,204,0.015),transparent)">
+  <div class="sec-head">
+    <div class="sec-tag rv">// Architecture</div>
+    <h2 class="sec-title rv d1">HOW ALL LAYERS CONNECT</h2>
+  </div>
+  <div class="arch-wrap rv d2">
+    <div class="anode"><div class="aico">🌐</div><div class="ainf"><div class="aname">FRONTEND — HTML/JS + WEB3.JS</div><div class="adesc">User interface, MetaMask connect, SHA-256 hashing, form submit, TX console. Served via live-server.</div></div><div class="apill">PORT 3000</div></div>
+    <div class="aconn"><div class="aline"></div><div class="aarrow">▼</div><div class="albl">window.ethereum · EIP-1193</div></div>
+    <div class="anode"><div class="aico">🦊</div><div class="ainf"><div class="aname">METAMASK — WALLET PROVIDER</div><div class="adesc">Injects window.ethereum, manages accounts, signs TX with private key. Bridges browser to Ganache via JSON-RPC.</div></div><div class="apill">EIP-1193</div></div>
+    <div class="aconn"><div class="aline"></div><div class="aarrow">▼</div><div class="albl">JSON-RPC → localhost:7545</div></div>
+    <div class="anode"><div class="aico">🧪</div><div class="ainf"><div class="aname">GANACHE — LOCAL ETHEREUM</div><div class="adesc">Simulates full Ethereum. Chain ID 5777, port 7545. 10 test accounts with 100 ETH each. Instant block mining.</div></div><div class="apill">CHAIN ID 5777</div></div>
+    <div class="aconn"><div class="aline"></div><div class="aarrow">▼</div><div class="albl">ABI call → Smart Contract</div></div>
+    <div class="anode"><div class="aico">🔷</div><div class="ainf"><div class="aname">SMART CONTRACT — IDENTITYVERIFICATION.SOL</div><div class="adesc">Solidity 0.8.x stores hash, timestamp, wallet in mapping. Emits IdentityVerified event. Deployed via Truffle.</div></div><div class="apill">SOLIDITY 0.8</div></div>
+    <div class="aconn"><div class="aline"></div><div class="aarrow">▼</div><div class="albl">REST API → POST /api/verify</div></div>
+    <div class="anode"><div class="aico">🟩</div><div class="ainf"><div class="aname">NODE.JS + EXPRESS — BACKEND</div><div class="adesc">Receives TX metadata, validates, saves to MongoDB. GET endpoints for status queries and audit. Port 5000.</div></div><div class="apill">PORT 5000</div></div>
+    <div class="aconn"><div class="aline"></div><div class="aarrow">▼</div><div class="albl">Mongoose → MongoDB</div></div>
+    <div class="anode"><div class="aico">🍃</div><div class="ainf"><div class="aname">MONGODB — METADATA STORE</div><div class="adesc">Stores wallet, TX hash, block number, doc type, timestamp. Zero personal data. Audit trail indexed by wallet.</div></div><div class="apill">LOCAL / ATLAS</div></div>
+  </div>
+</section>
+
+<!-- SETUP -->
+<section class="section" id="setup">
+  <div class="sec-head" style="margin-bottom:3rem">
+    <div class="sec-tag rv">// Setup Guide</div>
+    <h2 class="sec-title rv d1">CONNECT EVERYTHING IN 7 STEPS</h2>
+  </div>
+  <div class="setup-grid">
+    <div class="steps-list">
+      <div class="cstep rv d1"><div class="cnum">01</div><div class="cinfo"><h4>Install & Start Ganache</h4><p>Run Ganache GUI → Quickstart or use CLI. Chain ID will be 5777.</p><code class="ccode">ganache --port 7545 --chainId 5777</code></div></div>
+      <div class="cstep rv d2"><div class="cnum">02</div><div class="cinfo"><h4>Add Ganache to MetaMask</h4><p>Add network: RPC http://127.0.0.1:7545 · Chain ID 5777 · Import a Ganache private key.</p></div></div>
+      <div class="cstep rv d3"><div class="cnum">03</div><div class="cinfo"><h4>Deploy Smart Contract</h4><p>Compile and deploy. Copy the contract address from output.</p><code class="ccode">truffle compile && truffle migrate --network development</code></div></div>
+      <div class="cstep rv d4"><div class="cnum">04</div><div class="cinfo"><h4>Update CONTRACT_ADDRESS</h4><p>In index.html find and replace the placeholder with your deployed address.</p><code class="ccode">const CONTRACT_ADDRESS = '0xYourAddr...'</code></div></div>
+      <div class="cstep rv d5"><div class="cnum">05</div><div class="cinfo"><h4>Start MongoDB + Backend</h4><p>Start MongoDB then configure .env and run the API server.</p><code class="ccode">cd backend && npm install && npm run dev</code></div></div>
+      <div class="cstep rv d6"><div class="cnum">06</div><div class="cinfo"><h4>Serve Frontend</h4><p>MetaMask requires a server (not file://). Use live-server.</p><code class="ccode">live-server --port=3000 --ignore=backend,node_modules</code></div></div>
+      <div class="cstep rv"><div class="cnum">07</div><div class="cinfo"><h4>Verify Your Identity!</h4><p>Connect MetaMask → Fill form → Submit → Watch blockchain visualizer add your block in real time!</p></div></div>
+    </div>
+    <div class="rv d3">
+      <div class="term-box">
+        <div class="term-head">
+          <div class="dots"><div class="d dr"></div><div class="d dy"></div><div class="d dg"></div></div>
+          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--muted)">bash — chainid-setup</span>
+        </div>
+        <div class="term-body">
+          <div><span class="tp">$ </span><span class="tc">ganache --port 7545 --chainId 5777</span></div>
+          <div class="tok">Chain ID: 5777 · RPC: 127.0.0.1:7545</div>
+          <div class="ta">Account[0]: 0xF9c2...4b9A (100 ETH)</div>
+          <div>&nbsp;</div>
+          <div><span class="tp">$ </span><span class="tc">truffle migrate --network development</span></div>
+          <div class="tok">Deploying 'IdentityVerification'</div>
+          <div class="ta">&gt; contract address: 0xABCD...1234</div>
+          <div class="tok">✓ Deployed! Gas used: 423,142</div>
+          <div>&nbsp;</div>
+          <div><span class="tp">$ </span><span class="tc">cd backend && npm run dev</span></div>
+          <div class="tok">✓ MongoDB connected</div>
+          <div class="tok">✓ Backend on port 5000</div>
+          <div>&nbsp;</div>
+          <div><span class="tp">$ </span><span class="tc">live-server --port=3000 --ignore=backend</span></div>
+          <div class="tok">✓ Serving at http://localhost:3000</div>
+          <div>&nbsp;</div>
+          <div><span class="tp">$ </span><span class="tcur"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="flogo">CHAIN·ID</div>
+  <p>Decentralized Identity Verification · Ethereum · MetaMask · Ganache (5777) · Truffle · Node.js · MongoDB</p>
+  <p style="font-size:0.72rem;color:rgba(224,247,244,0.2);margin-top:0.4rem">MIT License · For development use · Audit contracts before mainnet deployment</p>
+  <ul class="flinks">
+    <li><a href="#chain">Blockchain</a></li>
+    <li><a href="#app">Dashboard</a></li>
+    <li><a href="#arch">Architecture</a></li>
+    <li><a href="#setup">Setup</a></li>
+  </ul>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.10.0/web3.min.js"></script>
+<script>
+/* ── CANVAS BG ─────────────────────────────────────── */
+const cv=document.getElementById('bg'),cx=cv.getContext('2d');
+let W,H,nodes=[];
+let rgb={r:0,g:255,b:204};
+function resize(){W=cv.width=innerWidth;H=cv.height=innerHeight}
+resize();window.addEventListener('resize',resize);
+
+const themes={
+  cyan:{c1:'#00ffcc',c2:'#7b2fff',c3:'#ff2d78',r:0,g:255,b:204},
+  pink:{c1:'#ff2d78',c2:'#ff9500',c3:'#00ffcc',r:255,g:45,b:120},
+  gold:{c1:'#ffaa00',c2:'#ff2d78',c3:'#00ffcc',r:255,g:170,b:0},
+  purple:{c1:'#b366ff',c2:'#00ffcc',c3:'#ff2d78',r:179,g:102,b:255},
+  green:{c1:'#00ff88',c2:'#00ffcc',c3:'#7b2fff',r:0,g:255,b:136}
+};
+
+function setTheme(name,el){
+  const t=themes[name];if(!t)return;
+  const r=document.documentElement;
+  r.style.setProperty('--c1',t.c1);
+  r.style.setProperty('--c2',t.c2);
+  r.style.setProperty('--c3',t.c3);
+  rgb={r:t.r,g:t.g,b:t.b};
+  document.querySelectorAll('.dot').forEach(d=>d.classList.remove('on'));
+  if(el)el.classList.add('on');
+}
+
+class Node{
+  constructor(){this.x=Math.random()*W;this.y=Math.random()*H;
+    this.vx=(Math.random()-.5)*.4;this.vy=(Math.random()-.5)*.4;
+    this.r=Math.random()*2+1;this.p=Math.random()*Math.PI*2}
+  update(){this.x+=this.vx;this.y+=this.vy;
+    if(this.x<0||this.x>W)this.vx*=-1;if(this.y<0||this.y>H)this.vy*=-1;this.p+=0.02}
+  draw(){const a=0.3+Math.sin(this.p)*0.25;
+    cx.beginPath();cx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    cx.fillStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${a})`;cx.fill()}
+}
+for(let i=0;i<80;i++)nodes.push(new Node());
+
+function draw(){
+  cx.clearRect(0,0,W,H);
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<130){cx.beginPath();cx.moveTo(nodes[i].x,nodes[i].y);cx.lineTo(nodes[j].x,nodes[j].y);
+        cx.strokeStyle=`rgba(${rgb.r},${rgb.g},${rgb.b},${(1-d/130)*0.1})`;cx.lineWidth=0.5;cx.stroke()}
+    }
+    nodes[i].update();nodes[i].draw();
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+/* ── SCROLL REVEAL ─────────────────────────────────── */
+const ro=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')}),{threshold:0.08});
+document.querySelectorAll('.rv').forEach(el=>ro.observe(el));
+
+/* ── TABS ──────────────────────────────────────────── */
+function showTab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('panel-'+name).classList.add('on');
+  if(el){document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));el.classList.add('on')}
+}
+function setSA(el){
+  document.querySelectorAll('.sitem').forEach(s=>s.classList.remove('on'));
+  el.classList.add('on');
+}
+
+/* ── BLOCKCHAIN ────────────────────────────────────── */
+let blocks=[{num:0,hash:'0x4a9f...e71c',prev:'0x0000...0000',wallet:'GENESIS',type:'GENESIS',time:'INIT'}];
+function rh(){return '0x'+Array.from({length:8},()=>Math.floor(Math.random()*16).toString(16)).join('')+'...'+Array.from({length:4},()=>Math.floor(Math.random()*16).toString(16)).join('')}
+
+function buildBlocks(){
+  const c=document.getElementById('dynBlocks');c.innerHTML='';
+  blocks.slice(1).forEach((b,i)=>{
+    const u=document.createElement('div');u.className='bunit';
+    u.innerHTML=`<div class="chain-link"></div><div class="bcard" style="--d:${i*.3}s" onclick="inspBlock(${i+1})">
+      <div class="bb" style="background:var(--c2);color:#fff">VERIFIED</div>
+      <div class="bnum">BLOCK #${b.num}</div>
+      <div class="bhash">PREV: <span>${b.prev}</span></div>
+      <div class="bhash">HASH: <span>${b.hash}</span></div>
+      <div class="bdata">
+        <div><span class="bk">WALLET: </span><span class="bv">${b.wallet}</span></div>
+        <div><span class="bk">TYPE: </span><span class="bv">${b.type}</span></div>
+        <div><span class="bk">TIME: </span><span class="bv">${b.time}</span></div>
+      </div></div>`;
+    c.appendChild(u);
+  });
+}
+buildBlocks();
+
+function inspBlock(i){
+  const b=blocks[i];if(!b)return;
+  const el=document.getElementById('inspector');el.style.display='block';
+  el.innerHTML=`<div style="color:var(--c1);font-family:var(--mono);font-size:0.78rem;margin-bottom:0.8rem">⬡ BLOCK INSPECTOR — #${b.num}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;font-family:var(--mono);font-size:0.68rem;color:var(--muted)">
+      <div>NUMBER: <span style="color:var(--c1)">#${b.num}</span></div>
+      <div>TYPE: <span style="color:var(--c4)">${b.type}</span></div>
+      <div style="grid-column:1/-1">HASH: <span style="color:var(--c1)">${b.hash}</span></div>
+      <div style="grid-column:1/-1">PREV: <span style="color:var(--c2)">${b.prev}</span></div>
+      <div style="grid-column:1/-1">WALLET: <span style="color:var(--c4)">${b.wallet}</span></div>
+      <div>TIME: <span style="color:var(--c1)">${b.time}</span></div>
+    </div>`;
+}
+
+let verCount=0;
+function addBlock(wallet,docType){
+  const n=blocks.length;
+  blocks.push({num:n,hash:rh(),prev:blocks[n-1].hash,
+    wallet:wallet.slice(0,6)+'...'+wallet.slice(-4),
+    type:docType||'IDENTITY',time:new Date().toLocaleTimeString()});
+  buildBlocks();
+  verCount++;
+  document.getElementById('tkb').textContent=n;
+  document.getElementById('tkv').textContent=verCount;
+  document.getElementById('hbadge').textContent=verCount;
+}
+
+/* ══════════════════════════════════════════════════════
+   IMPORTANT: PASTE YOUR CONTRACT ADDRESS BELOW
+   Run: truffle migrate --reset
+   Copy "contract address: 0x..." from the output
+   Replace PASTE_YOUR_CONTRACT_ADDRESS_HERE with it
+══════════════════════════════════════════════════════ */
+const CONTRACT_ADDRESS = '0xEd5635E7Ffc65a11821748B7eFa3AFfde6bcF623';
+const BACKEND_URL = 'http://localhost:5000';
+
+const ABI = [
+  {"inputs":[{"internalType":"string","name":"_identityHash","type":"string"}],"name":"verifyIdentity","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"getIdentity","outputs":[{"internalType":"string","name":"","type":"string"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},
+  {"inputs":[{"internalType":"address","name":"_user","type":"address"}],"name":"isVerified","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"}
+];
+
+let web3, account, contract;
+
+/* ── CONNECT WALLET ────────────────────────────────── */
+async function connectWallet(){
+  if(typeof window.ethereum === 'undefined'){
+    alert('MetaMask not found!\n\nPlease:\n1. Install MetaMask from metamask.io\n2. Add Ganache network (RPC: http://127.0.0.1:7545, Chain ID: 5777)\n3. Import a Ganache private key\n4. Refresh this page');
+    return;
+  }
+  try{
+    const accounts = await window.ethereum.request({method:'eth_requestAccounts'});
+    account = accounts[0];
+    web3 = new Web3(window.ethereum);
+    contract = new web3.eth.Contract(ABI, CONTRACT_ADDRESS);
+
+    const chainId = await web3.eth.getChainId();
+    const balWei = await web3.eth.getBalance(account);
+    const bal = parseFloat(web3.utils.fromWei(balWei,'ether')).toFixed(4);
+
+    /* update sidebar */
+    document.getElementById('sAddr').textContent = account.slice(0,10)+'...'+account.slice(-6);
+    document.getElementById('sBal').textContent = bal+' ETH';
+    document.getElementById('sNet').textContent = 'ID:'+chainId;
+    document.getElementById('sNet').style.color = 'var(--c1)';
+    document.getElementById('netName').textContent = chainId==5777 ? 'Ganache Local' : 'Network #'+chainId;
+
+    /* update chip */
+    const chip = document.getElementById('chipSt');
+    chip.textContent = '● CONNECTED: '+account.slice(0,6)+'...'+account.slice(-4);
+    chip.style.cssText = 'background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.4);color:#00ff88;font-family:var(--mono);font-size:0.6rem;padding:0.28rem 0.7rem;border-radius:3px';
+
+    /* update nav button */
+    document.getElementById('navConnectBtn').textContent = account.slice(0,6)+'...'+account.slice(-4);
+    document.getElementById('navConnectBtn').style.background = 'linear-gradient(135deg,#00ff88,var(--c2))';
+
+    /* show form, hide prompt */
+    document.getElementById('cprompt').style.display = 'none';
+    document.getElementById('vform').style.display = 'block';
+
+    /* log to console */
+    showCon();
+    txLog('✅ MetaMask connected: '+account, 'cg');
+    txLog('⛓️ Chain ID: '+chainId+(chainId==5777?' (Ganache ✓)':' (⚠️ Switch to Ganache 5777!)'), 'c4');
+    txLog('💰 Balance: '+bal+' ETH', 'c1');
+    txLog('📋 Contract: '+CONTRACT_ADDRESS, 'c2');
+
+    if(chainId != 5777){
+      alert('⚠️ Wrong network!\n\nYou are on Chain ID: '+chainId+'\nPlease switch MetaMask to Ganache Local (Chain ID: 5777)');
+    }
+
+  } catch(e){
+    alert('Connection failed: '+e.message);
+  }
+}
+
+/* ── HASH ──────────────────────────────────────────── */
+async function hashData(data){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(data)));
+  return '0x'+Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function getForm(){
+  return{
+    name:document.getElementById('fn').value,
+    dob:document.getElementById('fd').value,
+    nationality:document.getElementById('fnt').value,
+    docType:document.getElementById('fdt').value,
+    docNum:document.getElementById('fdn').value,
+    email:document.getElementById('fem').value,
+    ts:Date.now()
+  };
+}
+
+async function previewHash(){
+  const d=getForm();
+  if(!d.name){alert('Please fill in at least your Full Name first.');return}
+  const h=await hashData(d);
+  showCon();
+  txLog('🔐 SHA-256 HASH PREVIEW','c2');
+  txLog(h,'c1');
+  txLog('ℹ️ Only this hash goes on-chain — never your raw data.','c4');
+}
+
+function clearForm(){
+  ['fn','fd','fnt','fdn','fem'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('txcon').style.display='none';
+}
+
+async function handleFile(inp){
+  const f=inp.files[0];if(!f)return;
+  const h=await hashData(await f.arrayBuffer());
+  const el=document.getElementById('filest');
+  el.style.display='block';
+  el.textContent='📄 '+f.name+' → Hash: '+h.slice(0,24)+'...';
+}
+
+/* ── SUBMIT ────────────────────────────────────────── */
+async function submitVerification(){
+  if(!account){alert('Please connect MetaMask first!');return}
+  const d=getForm();
+  if(!d.name||!d.dob||!d.docNum){
+    alert('Please fill in: Full Name, Date of Birth, and Document Number');return
+  }
+
+  showCon();setP(10);
+  txLog('🔐 Hashing identity data locally (SHA-256)...','c1');
+  const hash = await hashData(d);
+  txLog('Hash: '+hash.slice(0,34)+'...','c1');
+  setP(25);
+  txLog('📡 Sending TX to Ganache (Chain ID 5777, Port 7545)...','c2');
+
+  try{
+    setP(40);
+    const tx = await contract.methods.verifyIdentity(hash).send({from:account, gas:300000});
+    setP(70);
+    txLog('⛓️ TX Hash: '+tx.transactionHash,'c4');
+    txLog('📦 Block Number: #'+tx.blockNumber,'c2');
+    txLog('✅ Identity written to Ethereum blockchain!','cg');
+
+    addBlock(account, d.docType);
+    addHistory(d.name, tx.transactionHash, d.docType);
+    setP(85);
+
+    txLog('💾 Saving metadata to MongoDB...','c1');
+    try{
+      const res = await fetch(BACKEND_URL+'/api/verify',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          walletAddress:account, identityHash:hash,
+          txHash:tx.transactionHash, blockNumber:tx.blockNumber,
+          docType:d.docType, nationality:d.nationality,
+          timestamp:new Date().toISOString()
+        })
+      });
+      txLog(res.ok?'✅ Saved to MongoDB!':'⚠️ Backend error (is it running on port 5000?)', res.ok?'cg':'c3');
+    }catch(e){
+      txLog('⚠️ Backend not reachable. Run: cd backend && npm run dev','c3');
+    }
+
+    setP(100);
+    txLog('🎉 VERIFICATION COMPLETE — Identity secured on blockchain!','cg');
+
+  }catch(e){
+    txLog('❌ TX Failed: '+e.message,'c3');
+    txLog('💡 Check: Is Ganache running? Is CONTRACT_ADDRESS set correctly? Is MetaMask on Chain 5777?','c4');
+    setP(0);
+  }
+}
+
+/* ── CHECK STATUS ──────────────────────────────────── */
+async function checkStatus(){
+  const addr = document.getElementById('saddr').value.trim();
+  if(!addr||!addr.startsWith('0x')){alert('Enter a valid Ethereum address starting with 0x');return}
+  const el = document.getElementById('sres');
+  el.innerHTML = '<div style="text-align:center;padding:2rem;font-family:var(--mono);color:var(--c1)">⛓️ Querying blockchain...</div>';
+
+  if(contract){
+    try{
+      const res = await contract.methods.getIdentity(addr).call();
+      const ok=res[2];
+      const ts=res[1]!='0'?new Date(parseInt(res[1])*1000).toLocaleString():'N/A';
+      el.innerHTML=`
+        <div class="rrow"><span class="rk">WALLET</span><span class="rv hi">${addr}</span></div>
+        <div class="rrow"><span class="rk">VERIFIED ON-CHAIN</span><span class="rv ${ok?'ok':''}">${ok?'✅ YES':'❌ NO'}</span></div>
+        <div class="rrow"><span class="rk">IDENTITY HASH</span><span class="rv">${res[0]?res[0].slice(0,28)+'...':'Not found'}</span></div>
+        <div class="rrow"><span class="rk">VERIFIED AT</span><span class="rv ya">${ts}</span></div>
+        <div class="rrow"><span class="rk">SOURCE</span><span class="rv hi">Smart Contract (On-Chain)</span></div>`;
+      return;
+    }catch(e){}
+  }
+
+  try{
+    const r=await fetch(BACKEND_URL+'/api/verify/'+addr);
+    const data=await r.json();
+    el.innerHTML=`
+      <div class="rrow"><span class="rk">WALLET</span><span class="rv hi">${addr}</span></div>
+      <div class="rrow"><span class="rk">VERIFIED</span><span class="rv ${data.verified?'ok':''}">${data.verified?'✅ YES':'❌ NO'}</span></div>
+      <div class="rrow"><span class="rk">TX HASH</span><span class="rv ya">${data.txHash||'N/A'}</span></div>
+      <div class="rrow"><span class="rk">DOC TYPE</span><span class="rv">${data.docType||'N/A'}</span></div>
+      <div class="rrow"><span class="rk">SOURCE</span><span class="rv">MongoDB Backend</span></div>`;
+  }catch(e){
+    el.innerHTML='<div style="text-align:center;padding:2rem;font-family:var(--mono);font-size:0.7rem;color:var(--c3)">⚠️ Cannot reach blockchain or backend.<br>Connect MetaMask and ensure CONTRACT_ADDRESS is set.</div>';
+  }
+}
+
+/* ── HISTORY ───────────────────────────────────────── */
+let histItems=[];
+function addHistory(name,txHash,docType){
+  histItems.unshift({name,txHash,docType,time:new Date().toLocaleTimeString()});
+  const l=document.getElementById('hlist');l.innerHTML='';
+  histItems.forEach(h=>{
+    l.innerHTML+=`<div class="hitem">
+      <div class="hico">🔐</div>
+      <div><div class="hname">${h.name} · ${h.docType}</div>
+      <div class="hhash">TX: ${h.txHash.slice(0,20)}... · ${h.time}</div></div>
+      <div class="hst">VERIFIED</div></div>`;
+  });
+}
+
+/* ── CONSOLE HELPERS ───────────────────────────────── */
+function showCon(){document.getElementById('txcon').style.display='block'}
+function setP(pct){document.getElementById('tbar').style.width=pct+'%'}
+function txLog(msg,cls=''){
+  const l=document.getElementById('txlog');
+  const d=document.createElement('div');
+  d.className='tline';
+  d.innerHTML=`<span class="${cls}">[${new Date().toLocaleTimeString()}] ${msg}</span>`;
+  l.appendChild(d);
+  l.scrollTop=l.scrollHeight;
+}
+
+/* ── AUTO-CONNECT ──────────────────────────────────── */
+if(typeof window.ethereum !== 'undefined'){
+  window.ethereum.request({method:'eth_accounts'}).then(accounts=>{
+    if(accounts && accounts.length>0) connectWallet();
+  });
+}
+</script>
+</body>
+</html>
